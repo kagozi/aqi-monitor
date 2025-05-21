@@ -1,0 +1,9 @@
+.venv
+*.zip
+ppo/models/*
+ppo/tensorboard/*
+ppo/train/*
+ppo/logs/*
+ppo/logs/*.2
+ppo/logs/*.npz
+__pycache__/*

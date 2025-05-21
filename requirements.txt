@@ -1,0 +1,8 @@
+stable-baselines3[extra]
+gymnasium
+notebook
+matplotlib
+pandas
+numpy
+scipy
+gym
