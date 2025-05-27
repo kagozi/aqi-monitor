@@ -1,4 +1,4 @@
-from aqi import  AirQualityDiscreteEnv, TrainAndLoggingCallback
+from aqi import  AirQualityDiscreteEnv, TrainAndLoggingCallback, EnhancedLoggingCallback
 from stable_baselines3 import PPO
 import os
 from stable_baselines3.common.logger import configure
@@ -6,7 +6,7 @@ from stable_baselines3.common.logger import configure
 
 CHECKPOINT_DIR = './ppo/train/'
 LOG_DIR = './ppo/logs/'
-callback = TrainAndLoggingCallback(check_freq=1000, save_path=CHECKPOINT_DIR)
+callback = EnhancedLoggingCallback(check_freq=1000, save_path=CHECKPOINT_DIR)
 # Create and wrap the environment
 # Initialize DQN model with more reasonable parameters
 env = AirQualityDiscreteEnv()
