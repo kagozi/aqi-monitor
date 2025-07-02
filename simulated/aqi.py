@@ -1,8 +1,7 @@
 import numpy as np
 import gymnasium as gym # Updated import for gym
 from gymnasium import spaces
-from scipy.stats import norm
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback, BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.logger import configure
 import time
@@ -122,6 +121,7 @@ class AirQualityDiscreteEnv(gym.Env):
         self.time = (self.time + self.time_step) % 24
         
         # Reward function
+        
         aqi_error = abs(aqi - 50)  # Target AQI 50
         reward = (1 / (1 + 0.1*aqi_error)) - self.energy_coeff * energy
         

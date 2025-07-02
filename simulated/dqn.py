@@ -1,4 +1,4 @@
-from aqi import  AirQualityDiscreteEnv, TrainAndLoggingCallback, EnhancedLoggingCallback
+from simulated.aqi import  AirQualityDiscreteEnv, TrainAndLoggingCallback, EnhancedLoggingCallback
 from stable_baselines3 import DQN
 import os
 from stable_baselines3.common.logger import configure

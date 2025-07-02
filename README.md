@@ -48,3 +48,16 @@ Open a **jupyterlab** instance
 ```bash
 $ jupyter-lab
 ```
+
+### Reading AQI value
+```bash
+$ ssh user@pi.address
+$ cat /dev/ttyACM0
+$ source ~/piicodev-env/bin/activate
+$ rshell -p /dev/ttyACM0
+$ ls /pyboard
+$ cd /pyboard && edit main.py # modify the script
+
+$ rshell -p /dev/ttyACM0
+
+```
