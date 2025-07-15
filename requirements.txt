@@ -6,3 +6,4 @@ pandas
 numpy
 scipy
 gym
+paho-mqtt

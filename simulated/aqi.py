@@ -1,12 +1,14 @@
 import numpy as np
 import gymnasium as gym # Updated import for gym
 from gymnasium import spaces
-from scipy.stats import norm
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback, BaseCallback
+from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.logger import configure
 import time
+import pandas as pd
 import os
+import numpy as np
+# Define the Air Quality Discrete Environment
 
 class AirQualityDiscreteEnv(gym.Env):
     def __init__(self):
@@ -119,6 +121,7 @@ class AirQualityDiscreteEnv(gym.Env):
         self.time = (self.time + self.time_step) % 24
         
         # Reward function
+        
         aqi_error = abs(aqi - 50)  # Target AQI 50
         reward = (1 / (1 + 0.1*aqi_error)) - self.energy_coeff * energy
         
@@ -127,14 +130,16 @@ class AirQualityDiscreteEnv(gym.Env):
         terminated = self.time < 0.1  # End of the day
         truncated = False 
         return state, reward, terminated, truncated, {
-                                                    'concentration': concentration,
-                                                    'energy': energy,
-                                                    'wind_speed': wind_speed,
-                                                    'episode': {  # For automatic logging
-                                                        'r': reward, 
-                                                        'l': self.time_step
-                                                    }
-                                                }
+            'aqi': aqi,
+            'concentration': concentration,
+            'energy': energy,
+            'wind_speed': wind_speed,
+            'voltage': self.fan_voltage,
+            'episode': {
+                'r': reward, 
+                'l': self.time_step
+            }
+        }
     
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)  # Required for Gymnasium
@@ -180,5 +185,64 @@ class TrainAndLoggingCallback(BaseCallback):
             ep_length = self.locals['infos'][0]['episode']['l']
             self.logger.record('episode/reward', ep_reward)
             self.logger.record('episode/length', ep_length)
+        
+        return True
+    
+class EnhancedLoggingCallback(BaseCallback):
+    def __init__(self, check_freq, save_path, verbose=1):
+        super(EnhancedLoggingCallback, self).__init__(verbose)
+        self.check_freq = check_freq
+        self.save_path = save_path
+        self.metrics = {
+            'aqi': [],
+            'voltage': [],
+            'energy': [],
+            'wind_speed': [],
+            'concentration': []
+        }
+        self.df = pd.DataFrame(columns=['timestep', 'aqi', 'voltage', 'energy', 
+                                      'wind_speed', 'concentration'])
+
+    def _init_callback(self):
+        if self.save_path is not None:
+            os.makedirs(self.save_path, exist_ok=True)
+
+    def _on_step(self):
+        # Collect metrics every step
+        if len(self.locals['infos']) > 0:
+            info = self.locals['infos'][0]
+            self.metrics['aqi'].append(info.get('aqi', 0))
+            self.metrics['voltage'].append(info.get('voltage', 0))  # Removed [0] indexing
+            self.metrics['energy'].append(info.get('energy', 0))
+            self.metrics['wind_speed'].append(info.get('wind_speed', 0))
+            self.metrics['concentration'].append(info.get('concentration', 0))
+
+        # CSV Logging (every 100 steps)
+        if self.n_calls % 100 == 0:
+            new_row = {
+                'timestep': self.n_calls,
+                'aqi': np.mean(self.metrics['aqi']),
+                'voltage': np.mean(self.metrics['voltage']),
+                'energy': np.mean(self.metrics['energy']),
+                'wind_speed': np.mean(self.metrics['wind_speed']),
+                'concentration': np.mean(self.metrics['concentration'])
+            }
+            self.df = pd.concat([self.df, pd.DataFrame([new_row])], ignore_index=True)
+            self.df.to_csv(os.path.join(self.save_path, 'training_metrics.csv'), index=False)
+
+        # Model checkpointing (less frequent)
+        if self.n_calls % self.check_freq == 0:
+            model_path = os.path.join(self.save_path, f'best_model_{self.n_calls}')
+            self.model.save(model_path)
+            
+            # TensorBoard logging
+            self.logger.record('env/aqi', np.mean(self.metrics['aqi']))
+            self.logger.record('env/voltage', np.mean(self.metrics['voltage']))
+            self.logger.record('env/energy', np.mean(self.metrics['energy']))
+            self.logger.record('env/wind_speed', np.mean(self.metrics['wind_speed']))
+            self.logger.record('env/concentration', np.mean(self.metrics['concentration']))
+            
+            # Reset metrics
+            self.metrics = {k: [] for k in self.metrics}
         
         return True
