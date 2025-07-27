@@ -42,6 +42,9 @@ class FanControlEnv:
         self.current_step = 0
         
         # Motor/propeller constants (775 motor + 6x4 prop)
+        self.min_voltage = 12.0  # Minimum operating voltage
+        self.max_voltage = 22.5
+        self.min_speed = self.min_voltage / self.max_voltage  # ≈0.533
         self.voltage = 22.5  # 6S Li-ion
         self.max_rpm = 18750  # 20000 * (22.5/24)
         self.no_load_current = 0.5  # Amps (typical for 775 motor)
@@ -99,12 +102,31 @@ class FanControlEnv:
     def _calculate_power(self):
         """Calculate motor power draw in watts"""
         # Electrical power = V*I
-        rpm = self.current_fan_speed * self.max_rpm
+        if self.current_fan_speed < self.min_speed:
+            return 0.0
+        rpm = self._get_actual_rpm()
+        # rpm = self.current_fan_speed * self.max_rpm
         load_factor = min(rpm/self.max_rpm, 0.95)  # Prevent division by zero
-        
         # Current calculation (simplified motor model)
         current = self.no_load_current + (self.stall_current - self.no_load_current) * (1 - load_factor)
         return self.voltage * current
+    
+    def _get_actual_rpm(self):
+        """Get RPM accounting for minimum voltage"""
+        if self.current_fan_speed < self.min_speed:
+            return 0.0
+        # Scale RPM range to account for deadzone
+        effective_speed = (self.current_fan_speed - self.min_speed) / (1 - self.min_speed)
+        return effective_speed * self.max_rpm
+    # def _calculate_power(self):
+    #     """Calculate motor power draw in watts"""
+    #     if self.current_fan_speed == 0:
+    #         return 0
+    #     else:
+    #         rpm = self.current_fan_speed * self.max_rpm
+    #         load_factor = min(rpm / self.max_rpm, 0.95)
+    #         current = self.no_load_current + (self.stall_current - self.no_load_current) * (1 - load_factor)
+    #         return self.voltage * current
     
     def _update_aqi(self):
         """Update AQI based on ventilation and settling"""
@@ -123,15 +145,15 @@ class FanControlEnv:
     def _calculate_reward(self):
         """Calculate reward balancing AQI and energy use"""
         aqi_error = abs(self.current_aqi - self.target_aqi)
-        # aqi_reward = -aqi_error  # Penalize deviation from target
+        aqi_reward = -aqi_error  # Penalize deviation from target
         
         # Energy cost using actual power calculation
-        # energy_cost = self.energy_weight * (self._calculate_power() / 100)  # Scaled to similar magnitude
+        energy_cost = self.energy_weight * (self._calculate_power() / 100)  # Scaled to similar magnitude
         
-        # return aqi_reward - energy_cost
-        reward = 1 / (1 + aqi_error) - self.energy_weight * (self._calculate_power() / 100)
+        return aqi_reward - energy_cost
+        # reward = 1 / (1 + aqi_error) - self.energy_weight * (self._calculate_power() / 100)
 
-        return reward
+        # return reward
 
     
     def step(self, action):
@@ -140,8 +162,19 @@ class FanControlEnv:
         Action: -1 (decrease), 0 (nothing), +1 (increase)
         """
         # Apply action with realistic response
+        # Convert action to enum
+        # Apply deadzone-aware speed changes
         speed_change = 0.1 * action.value
-        self.current_fan_speed = np.clip(self.current_fan_speed + speed_change, 0, 1)
+        new_speed = self.current_fan_speed + speed_change
+        
+        # Enforce minimum speed threshold
+        if new_speed > 0 and new_speed < self.min_speed:
+            new_speed = 0.0  # Snap to zero below threshold
+        elif new_speed >= self.min_speed:
+            new_speed = max(self.min_speed, min(new_speed, 1.0))
+        self.current_fan_speed = new_speed
+        # speed_change = 0.1 * action.value
+        # self.current_fan_speed = np.clip(self.current_fan_speed + speed_change, 0, 1)
         
         # Update physics
         self._update_aqi()

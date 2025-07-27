@@ -16,10 +16,10 @@ class FanControlGymEnv(gym.Env):
         # Action space (same discrete actions)
         self.action_space = spaces.Discrete(len(self.fan_env.action_space))
         
-        # Observation space: [AQI, fan_speed, energy_usage]
+        # Observation space: [AQI, fan_speed]
         self.observation_space = spaces.Box(
-                low=np.array([0.0, 0.0, 0.0], dtype=np.float32),
-                high=np.array([1.0, 1.0, 1.0], dtype=np.float32),
+                low=np.array([0.0, 0.0], dtype=np.float32),
+                high=np.array([1.0, 1.0], dtype=np.float32),
                 dtype=np.float32
             )
 
@@ -38,9 +38,13 @@ class FanControlGymEnv(gym.Env):
         energy = self._get_normalized_energy()
         
         # Combine observations
-        full_obs = np.array([obs[0], obs[1], energy])
+        full_obs = np.array([obs[0], obs[1]])
         
         return full_obs, {}
+    
+    def seed(self, seed=None):
+        self.np_random, seed = gym.utils.seeding.np_random(seed)
+        return [seed]
     
     def step(self, action):
         """
@@ -59,7 +63,7 @@ class FanControlGymEnv(gym.Env):
         energy = self._get_normalized_energy()
         
         # Combine observations
-        full_obs = np.array([obs[0], obs[1], energy])
+        full_obs = np.array([obs[0], obs[1]])
         
         return full_obs, reward, done, False, info
     
