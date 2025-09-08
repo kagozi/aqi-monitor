@@ -21,8 +21,8 @@ np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
-CHECKPOINT_DIR = './a2c/train/' # 
-LOG_DIR = './a2c/logs/'
+CHECKPOINT_DIR = './a2c2/train/' # 
+LOG_DIR = './a2c2/logs/'
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
 callback = EnhancedLoggingCallback(check_freq=1000, save_path=CHECKPOINT_DIR)
@@ -35,15 +35,14 @@ model = A2C(
     'MlpPolicy',
     env,
     learning_rate=3e-4,
-    gamma=0.99,             # Discount factor
-    n_steps=5,              # Default for A2C, controls update frequency
-    gae_lambda=1.0,         # Generalized Advantage Estimation lambda
-    ent_coef=0.0,           # Entropy coefficient (can encourage exploration)
-    vf_coef=0.5,            # Value function loss coefficient
-    max_grad_norm=0.5,      # Gradient clipping
-    use_rms_prop=True,      # Default optimizer setting for A2C
+    gamma=0.99,
+    n_steps=5,         
+    gae_lambda=1.0,    
+    ent_coef=0.0,      
+    vf_coef=0.5,       
+    max_grad_norm=0.5, 
     verbose=1,
-    seed=SEED,          # Seed for reproducibility
+    seed=SEED,
 )
 # Set up and attach custom logger
 new_logger = configure(LOG_DIR, ["stdout", "csv", "tensorboard"])

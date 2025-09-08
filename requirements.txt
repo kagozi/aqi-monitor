@@ -7,3 +7,5 @@ numpy
 scipy
 gym
 paho-mqtt
+pandas
+torch
