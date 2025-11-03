@@ -1,7 +1,6 @@
 # File: simulated/physics.py
 import numpy as np
 from enum import Enum
-import math
 
 class Action(Enum):
     DECREASE = -1
@@ -79,9 +78,6 @@ class FanControlEnv:
         # Apply efficiency and empirical correction
         return theoretical_flow * self.prop_efficiency * 0.85
     
-    # def _get_obs(self):
-    #     """Observations [AQI, fan speed]"""
-    #     return np.array([self.current_aqi, self.current_fan_speed])
     def _get_obs(self):
         """Normalize observations to [0, 1] range"""
         norm_aqi = (self.current_aqi - 1) / 4       # AQI from 1–5 → 0–1
@@ -105,7 +101,7 @@ class FanControlEnv:
         if self.current_fan_speed < self.min_speed:
             return 0.0
         rpm = self._get_actual_rpm()
-        # rpm = self.current_fan_speed * self.max_rpm
+        
         load_factor = min(rpm/self.max_rpm, 0.95)  # Prevent division by zero
         # Current calculation (simplified motor model)
         current = self.no_load_current + (self.stall_current - self.no_load_current) * (1 - load_factor)
@@ -118,15 +114,6 @@ class FanControlEnv:
         # Scale RPM range to account for deadzone
         effective_speed = (self.current_fan_speed - self.min_speed) / (1 - self.min_speed)
         return effective_speed * self.max_rpm
-    # def _calculate_power(self):
-    #     """Calculate motor power draw in watts"""
-    #     if self.current_fan_speed == 0:
-    #         return 0
-    #     else:
-    #         rpm = self.current_fan_speed * self.max_rpm
-    #         load_factor = min(rpm / self.max_rpm, 0.95)
-    #         current = self.no_load_current + (self.stall_current - self.no_load_current) * (1 - load_factor)
-    #         return self.voltage * current
     
     def _update_aqi(self):
         """Update AQI based on ventilation and settling"""
@@ -151,10 +138,6 @@ class FanControlEnv:
         energy_cost = self.energy_weight * (self._calculate_power() / 100)  # Scaled to similar magnitude
         
         return aqi_reward - energy_cost
-        # reward = 1 / (1 + aqi_error) - self.energy_weight * (self._calculate_power() / 100)
-
-        # return reward
-
     
     def step(self, action):
         """
@@ -173,10 +156,8 @@ class FanControlEnv:
         elif new_speed >= self.min_speed:
             new_speed = max(self.min_speed, min(new_speed, 1.0))
         self.current_fan_speed = new_speed
-        # speed_change = 0.1 * action.value
-        # self.current_fan_speed = np.clip(self.current_fan_speed + speed_change, 0, 1)
         
-        # Update physics
+        # Update AQI
         self._update_aqi()
         
         # Calculate reward
@@ -201,16 +182,16 @@ class FanControlEnv:
               f"Fan: {self.current_fan_speed:.2f} ({int(rpm)} RPM) | "
               f"Power: {power:.1f}W")
 
-# # Example usage
-# if __name__ == "__main__":
-#     env = FanControlEnv()
-#     state = env.reset()
+# Example usage
+if __name__ == "__main__":
+    env = FanControlEnv()
+    state = env.reset()
     
-#     # Test random policy
-#     for _ in range(1000):
-#         action = np.random.choice(env.action_space)
-#         next_state, reward, done, _ = env.step(action)
-#         env.render()
+    # Test random policy
+    for _ in range(1000):
+        action = np.random.choice(env.action_space)
+        next_state, reward, done, _ = env.step(action)
+        env.render()
         
-#         if done:
-#             break
+        if done:
+            break

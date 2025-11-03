@@ -56,4 +56,3 @@ model.set_logger(new_logger)
 
 # Train the model
 model.learn(total_timesteps=100000, callback=callback)
-

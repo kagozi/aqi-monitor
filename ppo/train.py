@@ -37,11 +37,11 @@ model = PPO(
     env, 
     tensorboard_log=LOG_DIR, 
     verbose=1,
-    n_steps=2048,        # Number of steps to run for each environment per update
-    batch_size=128,       # Minibatch size
-    n_epochs=10,         # Number of epoch when optimizing the surrogate loss
+    # n_steps=2048,        # Number of steps to run for each environment per update
+    # batch_size=128,       # Minibatch size
+    # n_epochs=10,         # Number of epoch when optimizing the surrogate loss
     gamma=0.99,          # Discount factor
-    gae_lambda=0.95,     # Factor for trade-off of bias vs variance for GAE
+    # gae_lambda=0.95,     # Factor for trade-off of bias vs variance for GAE
     ent_coef=0.01,       # Entropy coefficient
     learning_rate=3e-4,  # Learning rate
     clip_range=0.2,      # Clipping parameter

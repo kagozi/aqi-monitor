@@ -1,0 +1,4 @@
+1. Abstract a testing environment from the simulated physics model
+2. Test RL policies and rule-based function in the simulated environment
+3. Test RL policies and rule-based function on sensor data (MQTT) 
+4. Analyze and finalize report

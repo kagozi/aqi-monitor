@@ -56,7 +56,7 @@ $ cat /dev/ttyACM0
 $ source ~/piicodev-env/bin/activate
 $ rshell -p /dev/ttyACM0
 $ ls /pyboard
-$ cd /pyboard && edit main.py # modify the script
+$ cd /pyboard && nano main.py # modify the script
 
 $ rshell -p /dev/ttyACM0
 
